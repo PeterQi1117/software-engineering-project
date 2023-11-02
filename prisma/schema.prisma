@@ -5,71 +5,86 @@ generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider  = "postgresql"
-  url       = env("POSTGRES_PRISMA_URL") // uses connection pooling
+datasource db {  
+  provider = "postgresql"
+  url = env("POSTGRES_PRISMA_URL") // uses connection pooling
   directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
 }
 
 model User {
-  id            String    @id @default(cuid())
-  firstName     String?
-  lastName      String?
-  address       String?
-  phoneNumber   String?
-  email         String?   @unique
-  parentId      Int?
-  teacherId     Int?
+  id          String   @id @default(cuid())
+  firstName   String?
+  lastName    String?
+  address     String?
+  phoneNumber String?
+  email       String?  @unique
+  parentId    Int?
+  parent      Parent?  @relation(fields: [parentId], references: [id])
+  teacherId   Int?
+  teacher     Teacher? @relation(fields: [teacherId], references: [id])
 }
 
 model Facility {
-  id               Int         @id @default(autoincrement())
+  id               Int             @id @default(autoincrement())
   name             String
   address          String
   phoneNumber      String
   adminName        String
-  adminEmail       String      @unique
+  adminEmail       String          @unique
   adminPhoneNumber String
   licenseNumber    String
   classrooms       Classroom[]
   teachers         Teacher[]
+  facilityAdmins   FacilityAdmin[]
 }
 
 model Child {
-  id          Int                   @id @default(autoincrement())
+  id          Int          @id @default(autoincrement())
   firstName   String
   lastName    String
   dateOfBirth DateTime
   allergies   String?
   parentId    Int
-  parent      Parent                @relation(fields: [parentId], references: [id])
-  enrollments ClassroomEnrollment[]
+  parent      Parent       @relation(fields: [parentId], references: [id])
+  classroomId Int?
+  classroom   Classroom?   @relation(fields: [classroomId], references: [id])
   attendances Attendance[]
 }
 
+model FacilityAdmin {
+  id         Int      @id @default(autoincrement())
+  facilityId Int
+  facility   Facility @relation(fields: [facilityId], references: [id])
+}
+
 model Parent {
-  id          Int     @id @default(autoincrement())
-  children    Child[]
+  id       Int     @id @default(autoincrement())
+  children Child[]
+  userId   String  @unique
+  User     User[]
 }
 
 model Teacher {
-  id           Int                @id @default(autoincrement())
+  id           Int          @id @default(autoincrement())
   hourlySalary Float
   facilityId   Int?
-  facility     Facility?          @relation(fields: [facilityId], references: [id])
-  classrooms   ClassroomTeacher[]
+  facility     Facility?    @relation(fields: [facilityId], references: [id])
+  classroom    Classroom?
   attendances  Attendance[]
+  userId       String       @unique
+  User         User[]
 }
 
 model Classroom {
-  id          Int                   @id @default(autoincrement())
-  type        ClassroomType
-  capacity    Int
-  tuitionFee  Float
-  facilityId  Int
-  facility    Facility              @relation(fields: [facilityId], references: [id])
-  enrollments ClassroomEnrollment[]
-  teachers    ClassroomTeacher[]
+  id         Int           @id @default(autoincrement())
+  type       ClassroomType
+  capacity   Int
+  tuitionFee Float
+  facilityId Int
+  facility   Facility      @relation(fields: [facilityId], references: [id])
+  teacherId  Int?          @unique
+  teacher    Teacher?      @relation(fields: [teacherId], references: [id])
+  children   Child[]
 }
 
 enum ClassroomType {
@@ -94,22 +109,4 @@ model Attendance {
 enum AttendanceType {
   SignIn
   SignOut
-}
-
-model ClassroomEnrollment {
-  childId     Int
-  child       Child     @relation(fields: [childId], references: [id])
-  classroomId Int
-  classroom   Classroom @relation(fields: [classroomId], references: [id])
-
-  @@id([childId, classroomId])
-}
-
-model ClassroomTeacher {
-  teacherId   Int
-  teacher     Teacher   @relation(fields: [teacherId], references: [id])
-  classroomId Int
-  classroom   Classroom @relation(fields: [classroomId], references: [id])
-
-  @@id([teacherId, classroomId])
 }

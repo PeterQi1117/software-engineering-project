@@ -1,15 +1,8 @@
 import Image from "next/image";
-import client from "@/prismadb";
-
-async function getAllUsers() {
-  const users = await client.user.findMany();
-
-  return {
-    users,
-  };
-}
+import { getAllUsers } from "./actions";
 
 export default async function Home() {
+  
   const { users } = await getAllUsers();
 
   return (
